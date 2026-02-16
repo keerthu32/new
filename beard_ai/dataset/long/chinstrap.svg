@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500" viewBox="0 0 800 500" role="img" aria-label="Chinstrap">
+  <rect width="800" height="500" fill="#0f172a"/>
+  <circle cx="400" cy="200" r="110" fill="#f2d2b6"/>
+  <path d="M290 260 Q400 360 510 260 L510 340 Q400 430 290 340 Z" fill="#a78bfa" opacity="0.92"/>
+  <text x="400" y="460" font-family="Inter,Arial,sans-serif" font-size="42" fill="#e5e7eb" text-anchor="middle">Chinstrap</text>
+</svg>

@@ -1,0 +1,32 @@
+{
+  "buzz_cut": {
+    "beard_style": "stubble",
+    "length_group": "short",
+    "label": "Sharp Stubble",
+    "image_file": "stubble.svg"
+  },
+  "crew_cut": {
+    "beard_style": "goatee",
+    "length_group": "short",
+    "label": "Classic Goatee",
+    "image_file": "goatee.svg"
+  },
+  "side_part": {
+    "beard_style": "full_beard",
+    "length_group": "medium",
+    "label": "Balanced Full Beard",
+    "image_file": "full_beard.svg"
+  },
+  "pompadour": {
+    "beard_style": "full_beard",
+    "length_group": "medium",
+    "label": "Volume + Full Beard",
+    "image_file": "full_beard.svg"
+  },
+  "long_wavy": {
+    "beard_style": "chinstrap",
+    "length_group": "long",
+    "label": "Defined Chinstrap",
+    "image_file": "chinstrap.svg"
+  }
+}
