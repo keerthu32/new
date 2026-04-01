@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Digital Twin | Landing</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Orbitron:wght@500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+    <nav class="navbar">
+      <span class="brand-text">Digital Twin</span>
+      <div class="nav-links">
+        <a href="/dashboard">Dashboard</a>
+        <a href="/results">Results</a>
+      </div>
+    </nav>
+
+    <main class="page-wrap">
+      <h1 class="page-title">Industrial Battery Digital Twin</h1>
+      <p class="page-subtitle">From visual mockup to behavior-driven twin with live telemetry mapping.</p>
+
+      <section class="hero">
+        <article class="card">
+          <h3>What changed</h3>
+          <ul>
+            <li>3D circuit model built with Three.js</li>
+            <li>500ms update loop for real-time-like telemetry</li>
+            <li>Battery + risk mapping and trend chart</li>
+          </ul>
+        </article>
+
+        <article class="card">
+          <h3>How to run</h3>
+          <p>Render this template from Flask and expose <kbd>/api/twin/state</kbd>.</p>
+          <p>If the endpoint is unavailable, a built-in fallback simulator keeps the twin moving.</p>
+        </article>
+      </section>
+    </main>
+  </body>
+</html>
