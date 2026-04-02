@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ransomware Detector</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 1.5rem; background:#f5f7fb; }
+    .card { background: white; border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 1rem; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+    .risk-low { color:#207d35; }
+    .risk-medium { color:#d18400; }
+    .risk-high { color:#b81b13; }
+    button { background:#2457ff;color:#fff;border:none;border-radius:6px;padding:.6rem .9rem;cursor:pointer; }
+    code { background:#f0f2f7; padding:.1rem .3rem;border-radius:4px; }
+  </style>
+</head>
+<body>
+  <h1>Local Ransomware Detection Dashboard</h1>
+
+  <div class="card">
+    <p>This app scans local files for suspicious extensions, ransom-note file names, and high-entropy content patterns.</p>
+    <button id="scanBtn">Run Full Local Scan</button>
+    <p id="status"></p>
+  </div>
+
+  <div class="card">
+    <h3>Latest Result</h3>
+    <p>Risk: <strong id="risk" class="risk-low">unknown</strong></p>
+    <p>Probability: <span id="probability">-</span></p>
+    <p>Model accuracy (Random Forest): <span id="accuracy">-</span></p>
+    <p>Scanned files: <span id="files">-</span></p>
+    <p>High entropy files: <span id="entropyFiles">-</span></p>
+    <p>Suspicious extensions: <span id="suspiciousExt">-</span></p>
+    <p>Ransom notes: <span id="notes">-</span></p>
+    <p>Average entropy: <span id="avgEntropy">-</span></p>
+    <p>Scan root: <code id="root">-</code></p>
+  </div>
+
+  <div class="card">
+    <h3>Recent Risk Trend</h3>
+    <canvas id="riskChart" height="90"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="{{ url_for('static', filename='chart.js') }}"></script>
+</body>
+</html>
