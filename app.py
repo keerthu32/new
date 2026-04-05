@@ -4,6 +4,8 @@
 import json
 import os
 import sqlite3
+import urllib.error
+import urllib.request
 from functools import wraps
 from typing import Any
 
@@ -225,10 +227,10 @@ LOGIN_TEMPLATE = """
 <!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>Dementia AI - Login</title>
 <style>
-:root{--brand:#4f46e5;--brand2:#7c3aed;--bg:#f6f7fb;--card:#ffffff;--muted:#64748b}
-*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,sans-serif;background:linear-gradient(120deg,#eef2ff,#f8fafc);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
-.wrap{display:grid;grid-template-columns:1.05fr 1fr;max-width:980px;width:100%;background:var(--card);border-radius:20px;overflow:hidden;box-shadow:0 15px 40px rgba(15,23,42,.15)}
-.hero{background:linear-gradient(145deg,var(--brand),var(--brand2));color:#fff;padding:38px}.hero h1{margin-top:0}.hero p{opacity:.95;line-height:1.5}
+:root{--brand:#2563eb;--brand2:#1d4ed8;--bg:#f8fafc;--card:#ffffff;--muted:#64748b}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Segoe UI,sans-serif;background:var(--bg);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.wrap{display:grid;grid-template-columns:1.05fr 1fr;max-width:980px;width:100%;background:var(--card);border-radius:20px;overflow:hidden;box-shadow:0 10px 25px rgba(15,23,42,.08);border:1px solid #e2e8f0}
+.hero{background:#ffffff;color:#0f172a;padding:38px;border-right:1px solid #e2e8f0}.hero h1{margin-top:0}.hero p{opacity:.95;line-height:1.5}
 .panel{padding:34px}.title{margin:0 0 20px}.fg{margin-bottom:14px}label{display:block;font-weight:600;margin-bottom:6px}
 input,select{width:100%;padding:12px;border:1px solid #dbe2ea;border-radius:10px}.btn{width:100%;padding:12px;border:none;border-radius:10px;background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-weight:700;cursor:pointer}
 .alert{padding:10px;border-radius:10px;margin-bottom:12px}.err{background:#fee2e2;color:#991b1b}.ok{background:#dcfce7;color:#166534}.hint{color:var(--muted);margin-top:14px;text-align:center}
@@ -247,9 +249,9 @@ PATIENT_TEMPLATE = """
 <!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>Patient Dashboard</title>
 <style>
-body{margin:0;font-family:Inter,Segoe UI,sans-serif;background:#f8fafc;color:#0f172a}.top{background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff;padding:18px 24px;display:flex;justify-content:space-between;align-items:center}.logout{color:#fff;text-decoration:none;background:rgba(255,255,255,.2);padding:9px 12px;border-radius:8px}
+body{margin:0;font-family:Inter,Segoe UI,sans-serif;background:#f8fafc;color:#0f172a}.top{background:#ffffff;color:#0f172a;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #e2e8f0}.logout{color:#1d4ed8;text-decoration:none;background:#eff6ff;padding:9px 12px;border-radius:8px;border:1px solid #bfdbfe}
 .container{max-width:1200px;margin:22px auto;padding:0 16px}.card{background:#fff;border-radius:16px;padding:22px;box-shadow:0 8px 24px rgba(15,23,42,.08);margin-bottom:18px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
-input,select{width:100%;padding:10px;border:1px solid #dbe2ea;border-radius:10px}.btn{margin-top:12px;width:100%;padding:12px;border:0;border-radius:12px;background:#4f46e5;color:#fff;font-weight:700;cursor:pointer}.result{display:none}
+input,select,textarea{width:100%;padding:10px;border:1px solid #dbe2ea;border-radius:10px;background:#fff}.btn{margin-top:12px;width:100%;padding:12px;border:0;border-radius:12px;background:#2563eb;color:#fff;font-weight:700;cursor:pointer}.result{display:none}
 .metric{font-size:2rem;font-weight:800;text-align:center}.risk{font-weight:700;text-align:center;padding:10px;border-radius:10px;margin:10px 0}
 small{color:#64748b}.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px}.stat{background:#eef2ff;border-radius:12px;padding:12px}.stat .v{font-size:1.4rem;font-weight:800;color:#4338ca}
 table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px solid #e2e8f0;text-align:left}th{background:#f8fafc}
@@ -274,6 +276,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:8px;border-bottom:1px so
 <div><label>ASF</label><input id='ASF' type='number' min='0.7' max='1.3' step='0.01' value='1'></div>
 </div><button class='btn' onclick='predict()'>Predict Risk</button></div>
 <div class='card result' id='result'><h3>Result</h3><div class='metric' id='prob'></div><div class='risk' id='risk'></div><p id='interp'></p><ul id='recs'></ul><button class='btn' onclick='savePred()'>Save Assessment</button></div>
+<div class='card'><h3>AI Clinical Assistant</h3><p style='color:#64748b'>Generate a professional explanation for doctor/patient communication (uses Groq if configured).</p><button class='btn' onclick='generateAIInsight()'>Generate AI Report</button><div id='aiInsight' style='margin-top:12px;white-space:pre-wrap;line-height:1.5;color:#1f2937'></div></div>
 <div class='card'><h3>Assessment History</h3><table><thead><tr><th>Date</th><th>Probability</th><th>Risk</th><th>Prediction</th></tr></thead><tbody id='historyBody'><tr><td colspan='4'>Loading...</td></tr></tbody></table></div>
 <div class='card'><h3>Doctor Care Plan</h3><div><strong>Active Medications</strong><ul id='medicationsList'><li>Loading...</li></ul></div><div style='margin-top:10px'><strong>Care Tasks</strong><ul id='taskList'><li>Loading...</li></ul></div></div>
 </div>
@@ -283,6 +286,7 @@ function getData(){const ids=['Age','Education_Years','MMSE_Score','Socioeconomi
 async function predict(){const res=await fetch('/api/predict',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(getData())});const data=await res.json();if(data.error){alert(data.error);return;}lastResult=data;document.getElementById('result').style.display='block';document.getElementById('prob').textContent=`${data.dementia_probability}%`;const r=document.getElementById('risk');r.textContent=data.risk_level;r.style.background=data.risk_color+'25';r.style.color=data.risk_color;document.getElementById('interp').textContent=data.interpretation;document.getElementById('recs').innerHTML=data.recommendations.map(x=>`<li>${x}</li>`).join('')}
 async function savePred(){if(!lastResult)return;const payload={...lastResult,input:getData()};const res=await fetch('/api/save-prediction',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});const data=await res.json();alert(data.success?'Saved successfully':'Error saving prediction');if(data.success){loadHistory();}}
 async function loadHistory(){const res=await fetch('/api/prediction-history');const data=await res.json();const rows=data.predictions||[];const body=document.getElementById('historyBody');if(!rows.length){body.innerHTML=\"<tr><td colspan='4'>No assessments yet.</td></tr>\";document.getElementById('totalAssessments').textContent='0';document.getElementById('avgRisk').textContent='0%';document.getElementById('latestRisk').textContent='N/A';return;}body.innerHTML=rows.map(r=>`<tr><td>${new Date(r.date).toLocaleString()}</td><td>${r.probability}%</td><td>${r.risk_level}</td><td>${r.prediction}</td></tr>`).join('');const avg=(rows.reduce((a,b)=>a+Number(b.probability),0)/rows.length).toFixed(1);document.getElementById('totalAssessments').textContent=rows.length;document.getElementById('avgRisk').textContent=avg+'%';document.getElementById('latestRisk').textContent=rows[0].risk_level;}
+async function generateAIInsight(){if(!lastResult){alert('Please run a prediction first.');return;}const panel=document.getElementById('aiInsight');panel.textContent='Generating professional report...';const r=await fetch('/api/ai-insight',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({patient_data:getData(),prediction:lastResult})});const d=await r.json();panel.textContent=(d.provider==='groq'?'[Groq AI]\\n\\n':'[Local Summary]\\n\\n')+d.insight;}
 async function loadCarePlan(){const res=await fetch('/api/patient/care-plan');const data=await res.json();document.getElementById('medicationsList').innerHTML=(data.medications||[]).map(m=>`<li><strong>${m.medicine_name}</strong> — ${m.dosage}, ${m.frequency} (${m.status})</li>`).join('')||'<li>No active medications assigned.</li>';document.getElementById('taskList').innerHTML=(data.tasks||[]).map(t=>`<li>${t.task_title}${t.due_date?` (Due: ${t.due_date})`:''}${t.completed?' ✅':''}</li>`).join('')||'<li>No care tasks assigned.</li>';}
 loadHistory();
 loadCarePlan();
@@ -292,7 +296,7 @@ loadCarePlan();
 DOCTOR_TEMPLATE = """
 <!doctype html><html><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>
 <title>Doctor Dashboard</title>
-<style>body{margin:0;font-family:Inter,Segoe UI,sans-serif;background:#f8fafc}.top{display:flex;justify-content:space-between;padding:18px 24px;background:linear-gradient(135deg,#4f46e5,#7c3aed);color:#fff}.logout{color:#fff;text-decoration:none;background:rgba(255,255,255,.2);padding:8px 12px;border-radius:8px}.container{max-width:1200px;margin:24px auto;padding:0 16px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.card{background:#fff;padding:18px;border-radius:14px;box-shadow:0 8px 18px rgba(15,23,42,.07)}.num{font-size:1.8rem;font-weight:800;color:#4f46e5}.table{margin-top:16px;background:#fff;border-radius:14px;padding:16px;overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #eef2f7;text-align:left}.toolbar{display:flex;gap:10px;margin:10px 0}.toolbar input,.toolbar select{padding:8px;border:1px solid #dbe2ea;border-radius:8px}.btn{background:#4f46e5;color:white;border:0;border-radius:8px;padding:8px 10px;cursor:pointer}.modal{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center}.modal .content{width:min(800px,94vw);background:#fff;border-radius:12px;padding:16px;max-height:85vh;overflow:auto}</style>
+<style>body{margin:0;font-family:Inter,Segoe UI,sans-serif;background:#f8fafc}.top{display:flex;justify-content:space-between;padding:18px 24px;background:#fff;color:#0f172a;border-bottom:1px solid #e2e8f0}.logout{color:#1d4ed8;text-decoration:none;background:#eff6ff;padding:8px 12px;border-radius:8px;border:1px solid #bfdbfe}.container{max-width:1200px;margin:24px auto;padding:0 16px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.card{background:#fff;padding:18px;border-radius:14px;box-shadow:0 8px 18px rgba(15,23,42,.07)}.num{font-size:1.8rem;font-weight:800;color:#1d4ed8}.table{margin-top:16px;background:#fff;border-radius:14px;padding:16px;overflow:auto}table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #eef2f7;text-align:left}.toolbar{display:flex;gap:10px;margin:10px 0}.toolbar input,.toolbar select{padding:8px;border:1px solid #dbe2ea;border-radius:8px}.btn{background:#2563eb;color:white;border:0;border-radius:8px;padding:8px 10px;cursor:pointer}.modal{position:fixed;inset:0;background:rgba(15,23,42,.5);display:none;align-items:center;justify-content:center}.modal .content{width:min(860px,96vw);background:#fff;border-radius:12px;padding:16px;max-height:85vh;overflow:auto}</style>
 </head><body><div class='top'><strong>👨‍⚕️ Doctor Dashboard</strong><a class='logout' href='/logout'>Logout</a></div>
 <div class='container'><div class='cards'><div class='card'><div class='num' id='totalP'>0</div><div>Patients</div></div><div class='card'><div class='num' id='highR'>0</div><div>High Risk</div></div><div class='card'><div class='num' id='avgR'>0%</div><div>Average Risk</div></div><div class='card'><div class='num' id='totalA'>0</div><div>Assessments</div></div></div>
 <div class='table'><h3>Patient List</h3><div class='toolbar'><input id='search' placeholder='Search patient by name/email'><select id='riskFilter'><option value=''>All risks</option><option>Low Risk</option><option>Moderate Risk</option><option>High Risk</option><option>Very High Risk</option><option>No data</option></select><button class='btn' onclick='load()'>Apply</button></div><table><thead><tr><th>Name</th><th>Email</th><th>Risk</th><th>Last Assessment</th><th>Actions</th></tr></thead><tbody id='body'><tr><td colspan='5'>Loading…</td></tr></tbody></table></div></div>
@@ -438,6 +442,46 @@ def validate_prediction_input(data: dict[str, Any]) -> dict[str, Any]:
     return data
 
 
+def generate_groq_insight(patient_data: dict[str, Any], prediction: dict[str, Any]) -> str:
+    """
+    Optionally generate a polished medical-style summary via Groq Chat Completions API.
+    Falls back to a local summary if GROQ_API_KEY is not configured or request fails.
+    """
+    api_key = os.getenv("GROQ_API_KEY")
+    fallback = (
+        f"Clinical AI Summary: Estimated dementia probability is {prediction.get('dementia_probability', 'N/A')}% "
+        f"with risk level '{prediction.get('risk_level', 'N/A')}'. Recommend clinical follow-up, cognitive "
+        "monitoring, and physician-guided treatment planning."
+    )
+    if not api_key:
+        return fallback
+
+    prompt = (
+        "You are a clinical assistant. Draft a concise, professional explanation for a dementia risk screening result. "
+        "Include: patient profile summary, interpretation, next steps, and a strict disclaimer that this is not diagnosis.\n\n"
+        f"Patient input: {json.dumps(patient_data)}\n"
+        f"Model output: {json.dumps(prediction)}"
+    )
+    payload = {
+        "model": os.getenv("GROQ_MODEL", "llama-3.1-8b-instant"),
+        "messages": [{"role": "user", "content": prompt}],
+        "temperature": 0.3,
+    }
+    req = urllib.request.Request(
+        "https://api.groq.com/openai/v1/chat/completions",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=18) as response:
+            raw = response.read().decode("utf-8")
+            data = json.loads(raw)
+            return data["choices"][0]["message"]["content"].strip()
+    except (urllib.error.URLError, urllib.error.HTTPError, KeyError, ValueError):
+        return fallback
+
+
 @app.route("/")
 def index():
     if "user_id" in session:
@@ -515,6 +559,16 @@ def api_predict():
         return jsonify(ai_model.predict(data))
     except Exception as exc:
         return jsonify({"error": str(exc)}), 400
+
+
+@app.route("/api/ai-insight", methods=["POST"])
+@login_required
+def api_ai_insight():
+    payload = request.get_json(force=True)
+    patient_data = payload.get("patient_data", {})
+    prediction = payload.get("prediction", {})
+    text = generate_groq_insight(patient_data, prediction)
+    return jsonify({"insight": text, "provider": "groq" if os.getenv("GROQ_API_KEY") else "local"})
 
 
 @app.route("/api/save-prediction", methods=["POST"])
