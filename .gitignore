@@ -1,0 +1,5 @@
+__pycache__/
+*.pyc
+cattle_app/backend/uploads/
+cattle_app/backend/cattle.db
+node_modules/
